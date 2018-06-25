@@ -16,7 +16,6 @@ from gym_program.icm import make_icm
 
 TOKENS = ["default", "swap", "bubble", "insert", "copy", "find_max"]
 
-
 class AbstractProgramEnv(gym.Env):
     metadata = {'render.modes': ['human']}
     main_dir = osp.dirname('/home/matthewszhang/logs/program')
@@ -67,7 +66,7 @@ class AbstractProgramEnv(gym.Env):
         if len(self._obs_buffer) == AbstractProgramEnv.buf_train:
             self._cur_model.train(self._sess, self._obs_buffer, 
                                   self._nobs_buffer, self._action_buffer)        
-            self.icm_sample()
+            #self.icm_sample()
             self._sbuf = []
             self._obs_buffer = []
             self._nobs_buffer = []
@@ -254,9 +253,10 @@ class AbstractProgramEnv(gym.Env):
         else: self.observation_space = self.ob
             
     def set_curiosity(self, curiosity, model='lstm'):
-        self.curiosity = curiosity
+        self.curiosity = True
         self.model = model
         
+        n_actions = AbstractProgramEnv.n_actions
         if model == 'mlp':
             n_features = self._enc(self._state)[1].flatten().shape[0]
             
@@ -267,21 +267,27 @@ class AbstractProgramEnv(gym.Env):
                 None, None, AbstractProgramEnv.depth + AbstractProgramEnv.one_hot))
             self.t_out = self._lstm_normalize(self.t_in)
         
-        self._cur_model = make_icm(AbstractProgramEnv.n_actions, 
-                                   n_features)
+        self._cur_model = curiosity(n_features, n_actions, dir=self.logdir)
         self.ob = Box(low = -1, high = 1, shape = (n_features,))
         
     def set_visualize(self, visualize):
         self.visualize = visualize
+    
+    def set_path(self, dir):
+        assert os.path.isdir(dir)
+        self.logdir=dir
+        
+    def set_stoch(self, stoch):
+        return
     
     def render(self, mode='human', close=False):
         raise NotImplementedError("Env must implement abstract method")
     
     def icm_sample(self):
         buf_len = len(self._sbuf)
-        for _ in range(10):
+        for _ in range(3):
             rn = random.randint(0,buf_len-2)
-            sobs, nobs, act = self._sbuf[rn], self._sbuf[rn+1], self._action_buffer[rn]
+            sobs, nobs, act = self._sbuf[rn], self._sbuf[rn+1], self._action_buffer[rn+1]
             esobs, _ = self._enc(sobs)
             enobs, _ = self._enc(nobs)
             reward = (self._cur_model.run(self._sess, esobs, enobs, act)[0])
@@ -296,6 +302,7 @@ class SwapEnv(AbstractProgramEnv):
                       'stack':[], 'ptr_stack':[], 'gpr_1':[0], 'gpr_2':[0],
                       'alu_flag':[0]}
     sequence = ["swap"]
+    max_iteration = 100
     
     def __init__(self):
         self._state, self._tokens = self._get_init()
@@ -310,10 +317,6 @@ class SwapEnv(AbstractProgramEnv):
             self._uninitialized = False
         except:
             self._uninitialized = True
-        
-        dir = osp.join(self.main_dir, self.env_dir)
-        self.logdir = self._dir_search(dir)
-        os.makedirs(self.logdir)
             
         self.viewer = None
         self._vis_map = np.zeros((2 ** SwapEnv.dim1, 2 ** SwapEnv.dim2))
@@ -379,7 +382,6 @@ class SwapEnv(AbstractProgramEnv):
     def _get_reward(self, new_state, state, action):
         new_list = new_state["state"]
         
-        
         feed_state, _ = self._enc(new_state)
         feed_old, _ = self._enc(state)
         if self.hier:
@@ -391,10 +393,11 @@ class SwapEnv(AbstractProgramEnv):
         else:
             reward = 0
         done = 0
-        if action == AbstractProgramEnv.n_actions - 1:
+        if new_list == [0,1]:    
             done = 1
-            if new_list == [0,1]:    
-                reward = 1
+            reward = 1
+        elif self._episode_length % self.max_iteration == 0:
+            done = 1
                 
         return reward, done
     
@@ -426,10 +429,6 @@ class SortEnv(AbstractProgramEnv):
             self._uninitialized = False
         except:
             self._uninitialized = True
-        
-        dir = osp.join(self.main_dir, self.env_dir)
-        self.logdir = self._dir_search(dir)
-        os.makedirs(self.logdir)
             
         self.viewer = None
         self._vis_map = np.zeros((SortEnv.dim1,SortEnv.dim2))
@@ -564,10 +563,6 @@ class InsertEnv(AbstractProgramEnv):
             self._uninitialized = False
         except:
             self._uninitialized = True
-        
-        dir = osp.join(self.main_dir, self.env_dir)
-        self.logdir = self._dir_search(dir)
-        os.makedirs(self.logdir)
             
         self.viewer = None
         self._vis_map = np.zeros((InsertEnv.n_nums,InsertEnv.n_nums + 1))
@@ -704,10 +699,6 @@ class CopyEnv(AbstractProgramEnv):
         except:
             self._uninitialized = True
         
-        dir = osp.join(self.main_dir, self.env_dir)
-        self.logdir = self._dir_search(dir)
-        os.makedirs(self.logdir)
-            
         self.viewer = None
         self._vis_map = np.zeros((CopyEnv.copy_length*2,CopyEnv.copy_length + 1))
     
@@ -829,10 +820,6 @@ class MaxEnv(AbstractProgramEnv):
         except:
             self._uninitialized = True
         
-        dir = osp.join(self.main_dir, self.env_dir)
-        self.logdir = self._dir_search(dir)
-        os.makedirs(self.logdir)
-            
         self.viewer = None
         self._vis_map = np.zeros((MaxEnv.dim1,MaxEnv.dim2))
     

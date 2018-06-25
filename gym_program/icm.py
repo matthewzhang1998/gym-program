@@ -10,7 +10,7 @@ import tensorflow as tf
 from gym_program.helpers import ff, fc
 
 PARAMS = {'alpha_ICM':1e-4,
-          'eta':1e2,
+          'eta':1e0,
           'gamma':0.9,
           'eta_decay':0.9999,
           'eta_floor':2e5,
@@ -19,7 +19,7 @@ PARAMS = {'alpha_ICM':1e-4,
           'epochs':10}
 
 class ICM():
-    def __init__(self, n_actions, n_features, layers):
+    def __init__(self, n_features, n_actions):
         self.iterator = 0
         self.params = PARAMS
         self.minibatch = self.params["mb"]
@@ -28,17 +28,10 @@ class ICM():
         
         self.forward_widths, self.forward_activations = layers
         
-        self.t_states = tf.placeholder(dtype = tf.float32,
-                                shape = (None, n_features), name = 'curr_states')
-        self.n_states = tf.placeholder(dtype = tf.float32, shape=(None, n_features),
+        self.X = tf.placeholder(dtype = tf.float32,
+                                shape = (None, n_inputs), name = 'curr_states')
+        self.Y = tf.placeholder(dtype = tf.float32, shape=(None, n_outputs),
                                        name = 'next_states')
-        self.t_actions = tf.placeholder(dtype = tf.float32,
-                                shape = (None, n_actions),
-                                name = "curr_actions")
-        
-        labels=tf.nn.l2_normalize(self.n_states, axis=-1) # safety
-        ccsa = tf.concat([self.t_states, self.t_actions], axis=-1)
-        
         activ = tf.nn.relu
         flatten = tf.layers.flatten            
         with tf.variable_scope('icm'):                   
@@ -104,9 +97,9 @@ class ICM():
             for start in range(0, nbatch, nbatch_train):
                 end = start + nbatch_train
                 mbinds = inds[start:end]
-                feed = {self.t_states: states[mbinds],
+                feed = {self.n_states: states[mbinds],
                         self.t_actions: pactions[mbinds],
-                        self.n_states: olds[mbinds]}
+                        self.t_states: olds[mbinds]}
                 _, loss = sess.run([self.train_op, self.total_loss], feed)
         return
    

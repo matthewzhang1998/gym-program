@@ -27,3 +27,7 @@ register(
     id='NumMax-v0',
     entry_point='gym_program.envs:MaxEnv',
 )
+
+register(
+    id='MazeEnv-v0',
+    entry_point='gym_program.envs:MazeEnv')
