@@ -40,6 +40,7 @@ class AbstractProgramEnv(gym.Env):
         self._iterator = 0
         self.seed()
         self.status = 0
+        self.max_iteration = 100
         
         self.ob = None
         self.observation_space = None
@@ -280,6 +281,9 @@ class AbstractProgramEnv(gym.Env):
     def set_stoch(self, stoch):
         return
     
+    def set_length(self, max_len):
+        self.max_iteration = max_len
+    
     def render(self, mode='human', close=False):
         raise NotImplementedError("Env must implement abstract method")
     
@@ -302,7 +306,6 @@ class SwapEnv(AbstractProgramEnv):
                       'stack':[], 'ptr_stack':[], 'gpr_1':[0], 'gpr_2':[0],
                       'alu_flag':[0]}
     sequence = ["swap"]
-    max_iteration = 100
     
     def __init__(self):
         self._state, self._tokens = self._get_init()
@@ -393,10 +396,9 @@ class SwapEnv(AbstractProgramEnv):
         else:
             reward = 0
         done = 0
-        if new_list == [0,1]:    
-            done = 1
-            reward = 1
-        elif self._episode_length % self.max_iteration == 0:
+        if self._episode_length % self.max_iteration == 0:
+            if new_list == [0,1]:
+                reward = 1
             done = 1
                 
         return reward, done
@@ -409,7 +411,6 @@ class SortEnv(AbstractProgramEnv):
     dim1 = 5
     dim2 = 6
     vis_iteration = 1e4
-    max_iteration = 2e3
     init_state = {'state':[5,4,3,2,1], 'ptr':[0], 'comp_flag':[0],
                       'stack':[], 'ptr_stack':[], 'gpr_1':[0], 'gpr_2':[0],
                       'alu_flag':[0]}
@@ -486,7 +487,6 @@ class SortEnv(AbstractProgramEnv):
     
     def _get_reward(self, new_state, state, action):
         new_list = new_state["state"]
-        old_list = state["state"]
         
         feed_state, _ = self._enc(new_state)
         feed_old, _ = self._enc(state)
@@ -511,23 +511,28 @@ class SortEnv(AbstractProgramEnv):
         reward /= SortEnv.end_scaling
         done = 0
                     
-        if action == AbstractProgramEnv.n_actions - 1:
-            if self.hier:
-                self._tokens.pop()
-                if len(self._tokens) == 0:
-                    done = 1
-                    reward = (smeasure(new_list, SortEnv.final_state) - smeasure(SortEnv.init_state["state"], SortEnv.final_state)/
-                              (1-smeasure(SortEnv.init_state["state"], SortEnv.final_state)))
-                    #reward = smeasure(new_list, SortEnv.final_state) - smeasure(self._init_state["state"], SortEnv.final_state)
-            else:
-                done = 1
-                reward = (smeasure(new_list, SortEnv.final_state) - smeasure(SortEnv.init_state["state"], SortEnv.final_state)/
-                              (1-smeasure(SortEnv.init_state["state"], SortEnv.final_state)))
-                #reward = smeasure(new_list, SortEnv.final_state) - smeasure(self._init_state["state"], SortEnv.final_state)
+# =============================================================================
+#         if action == AbstractProgramEnv.n_actions - 1:
+#             if self.hier:
+#                 self._tokens.pop()
+#                 if len(self._tokens) == 0:
+#                     done = 1
+#                     reward = (smeasure(new_list, SortEnv.final_state) - smeasure(SortEnv.init_state["state"], SortEnv.final_state)/
+#                               (1-smeasure(SortEnv.init_state["state"], SortEnv.final_state)))
+#                     #reward = smeasure(new_list, SortEnv.final_state) - smeasure(self._init_state["state"], SortEnv.final_state)
+#             else:
+#                 done = 1
+#                 reward = (smeasure(new_list, SortEnv.final_state) - smeasure(SortEnv.init_state["state"], SortEnv.final_state)/
+#                               (1-smeasure(SortEnv.init_state["state"], SortEnv.final_state)))
+#                 #reward = smeasure(new_list, SortEnv.final_state) - smeasure(self._init_state["state"], SortEnv.final_state)
+#         
+# =============================================================================
         
-        if self._episode_length % SortEnv.max_iteration == 0:
+        if self._episode_length % self.max_iteration == 0:
             done = 1
-        return max(reward,0), done
+            reward = (smeasure(new_list, SortEnv.final_state))
+                 
+        return reward, done
 
     def _get_init(self):
         unshuffled = True
@@ -541,7 +546,6 @@ class SortEnv(AbstractProgramEnv):
 class InsertEnv(AbstractProgramEnv):
     env_dir = "InsertEnv"
     vis_iteration = 1e4
-    max_iteration = 1e4
     n_nums = 5
     init_state = {'state':[0] * n_nums, 'ptr':[0], 'comp_flag':[0],
                       'stack':[], 'ptr_stack':[], 'gpr_1':[0], 'gpr_2':[0],
@@ -649,13 +653,11 @@ class InsertEnv(AbstractProgramEnv):
                 self._tokens.pop()
                 if len(self._tokens) == 0:
                     reward += smeasure(new_list, self._squeue)
-                    done = 1    
             else:
-                done = 1
                 reward += smeasure(new_list, self._squeue)
                 #reward = smeasure(new_list, SortEnv.final_state) - smeasure(self._init_state["state"], SortEnv.final_state)
         
-        if self._episode_length % InsertEnv.max_iteration == 0:
+        if self._episode_length % self.max_iteration == 0:
             done = 1
             reward += smeasure(new_list, self._squeue)/InsertEnv.n_nums
             
@@ -679,7 +681,6 @@ class CopyEnv(AbstractProgramEnv):
     env_dir = "CopyEnv"
     copy_length = 3
     vis_iteration = 1e4
-    max_iteration = 1e4
     init_state = {'state':list(range(1, copy_length + 1))+[0]*copy_length, 'ptr':[0],
                       'comp_flag':[0],'stack':[], 'ptr_stack':[], 'gpr_1':[0],
                       'gpr_2':[0], 'alu_flag':[0]}
@@ -775,7 +776,6 @@ class CopyEnv(AbstractProgramEnv):
             if self.hier:
                 self._tokens.pop()
                 if len(self._tokens) == 0:
-                    done = 1
                     reward = (smeasure(new_list, self.final_state)
                                 - smeasure(self._init_state["state"], self.final_state))
             else:
@@ -783,7 +783,7 @@ class CopyEnv(AbstractProgramEnv):
                 reward = (smeasure(new_list, self.final_state)
                             - smeasure(self._init_state["state"], self.final_state))
                 
-        if self._episode_length % CopyEnv.max_iteration == 0:
+        if self._episode_length % self.max_iteration == 0:
             done = 1
             
         return reward, done
@@ -801,7 +801,6 @@ class MaxEnv(AbstractProgramEnv):
     dim1 = 4
     dim2 = 6
     vis_iteration = 1e4
-    max_iteration = 1e4
     init_state = {'state':[1,2,3,4,5], 'ptr':[0], 'comp_flag':[0],
                       'stack':[], 'ptr_stack':[], 'gpr_1':[0], 'gpr_2':[0],
                       'alu_flag':[0], 'return':[0]}
@@ -883,11 +882,10 @@ class MaxEnv(AbstractProgramEnv):
         done = 0
                     
         if action == AbstractProgramEnv.n_actions - 1:
-            done = 1
             if self._state["return"] == np.argmax(np.array(MaxEnv.init_state["state"])):
                 reward = 1
                 
-        if self._episode_length % MaxEnv.max_iteration == 0:
+        if self._episode_length % self.max_iteration == 0:
             done = 1
             
         return reward, done
