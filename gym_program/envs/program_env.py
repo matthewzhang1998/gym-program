@@ -171,7 +171,7 @@ class AbstractProgramEnv(gym.Env):
         
         if self.hier:
             t_out = (token, t_out)
-            
+        
         return t_out, enc
 
     def _action(self, action):
@@ -297,6 +297,9 @@ class AbstractProgramEnv(gym.Env):
             reward = (self._cur_model.run(self._sess, esobs, enobs, act)[0])
             print("Init State: {} \n Next State: {} \n Act: {} \n Rew: {}".format(sobs, nobs, act, reward))
     
+    def get_goal_state(self, obs):
+        return self._enc(self.intermediate_goal(self._episode_length))[0]
+    
 class SwapEnv(AbstractProgramEnv):
     env_dir = "SwapEnv"
     dim1 = 3
@@ -340,6 +343,7 @@ class SwapEnv(AbstractProgramEnv):
         if self.visualize:
             state = get_flattened(self._state)
             self._visualize(state, action)
+            
         return result
     
     def reset(self):
@@ -405,16 +409,20 @@ class SwapEnv(AbstractProgramEnv):
     
     def _get_init(self):
         return copy.deepcopy(SwapEnv.init_state), copy.deepcopy(list(SwapEnv.sequence))
-       
+    
+    def intermediate_goal(self, num):
+        return {'state':[0, 1], 'ptr':[1], 'comp_flag':[1],
+                      'stack':[], 'ptr_stack':[], 'gpr_1':[0], 'gpr_2':[1],
+                      'alu_flag':[0]}
+    
 class SortEnv(AbstractProgramEnv):
     env_dir = "SortEnv"
     dim1 = 5
     dim2 = 6
     vis_iteration = 1e4
-    init_state = {'state':[5,4,3,2,1], 'ptr':[0], 'comp_flag':[0],
+    init_state = {'state':[3,2,1], 'ptr':[0], 'comp_flag':[0],
                       'stack':[], 'ptr_stack':[], 'gpr_1':[0], 'gpr_2':[0],
                       'alu_flag':[0]}
-    final_state = sorted(init_state["state"])
     sequence = ['bubble'] * 4
     end_scaling = 1
     
@@ -535,13 +543,29 @@ class SortEnv(AbstractProgramEnv):
         return reward, done
 
     def _get_init(self):
-        unshuffled = True
-        while(unshuffled):
-            random.shuffle(SortEnv.init_state["state"])
-            unshuffled = False
-            if SortEnv.init_state["state"] == SortEnv.final_state:
-                unshuffled = True
+        ''' Turn off shuffling '''
+        
+#        unshuffled = True
+#        while(unshuffled):
+#            random.shuffle(SortEnv.init_state["state"])
+#            unshuffled = False
+#            if SortEnv.init_state["state"] == SortEnv.final_state:
+#                unshuffled = True
         return copy.deepcopy(SortEnv.init_state), copy.deepcopy(list(reversed(SortEnv.sequence)))
+    
+    def intermediate_goal(self, num):
+        if num < 10:
+            return {'state':[1, 2, 0], 'ptr':[1], 'comp_flag':[0],
+                      'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[1],
+                      'alu_flag':[0]}
+        elif 10 <= num < 20:
+            return {'state':[1, 0, 2], 'ptr':[2], 'comp_flag':[0],
+                      'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[0],
+                      'alu_flag':[0]}
+        elif 20 <= num:
+            return {'state':[0, 1, 2], 'ptr':[0], 'comp_flag':[1],
+                      'stack':[], 'ptr_stack':[], 'gpr_1':[1], 'gpr_2':[0],
+                      'alu_flag':[0]}
     
 class InsertEnv(AbstractProgramEnv):
     env_dir = "InsertEnv"
