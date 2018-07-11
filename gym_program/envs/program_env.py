@@ -424,7 +424,7 @@ class SortEnv(AbstractProgramEnv):
     dim1 = 5
     dim2 = 6
     vis_iteration = 1e4
-    init_state = {'state':[3,2,1], 'ptr':[0], 'comp_flag':[0],
+    init_state = {'state':[2,1,0], 'ptr':[0], 'comp_flag':[0],
                       'stack':[], 'ptr_stack':[], 'gpr_1':[0], 'gpr_2':[0],
                       'alu_flag':[0]}
     final_state = sorted(init_state['state'])
@@ -559,6 +559,61 @@ class SortEnv(AbstractProgramEnv):
         return copy.deepcopy(SortEnv.init_state), copy.deepcopy(list(reversed(SortEnv.sequence)))
     
     def intermediate_goal(self, num, intermediate=0):
+        sequence = [{'state':[2,1,0], 'ptr':[0], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[0],
+                          'alu_flag':[0]},
+                    {'state':[2,1,0], 'ptr':[1], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[0],
+                          'alu_flag':[0]},
+                    {'state':[2,1,0], 'ptr':[1], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[1],
+                          'alu_flag':[0]},
+                    {'state':[2,2,0], 'ptr':[1], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[1],
+                          'alu_flag':[0]},
+                    {'state':[2,2,0], 'ptr':[0], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[1],
+                          'alu_flag':[0]},
+                    {'state':[1,2,0], 'ptr':[0], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[1],
+                          'alu_flag':[0]},
+                    {'state':[1,2,0], 'ptr':[1], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[1],
+                          'alu_flag':[0]},
+                    {'state':[1,2,0], 'ptr':[2], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[1],
+                          'alu_flag':[0]},
+                    {'state':[1,2,0], 'ptr':[2], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[0],
+                          'alu_flag':[0]},
+                    {'state':[1,2,2], 'ptr':[2], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[0],
+                          'alu_flag':[0]},
+                    {'state':[1,2,2], 'ptr':[1], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[0],
+                          'alu_flag':[0]},
+                    {'state':[1,0,2], 'ptr':[1], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[0],
+                          'alu_flag':[0]},
+                    {'state':[1,0,2], 'ptr':[0], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[1], 'gpr_2':[0],
+                          'alu_flag':[0]},
+                    {'state':[0,0,2], 'ptr':[0], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[1], 'gpr_2':[0],
+                          'alu_flag':[0]},
+                    {'state':[0,0,2], 'ptr':[1], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[1], 'gpr_2':[0],
+                          'alu_flag':[0]},
+                    {'state':[0,1,2], 'ptr':[1], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[1], 'gpr_2':[0],
+                          'alu_flag':[0]},
+                    {'state':[0,1,2], 'ptr':[1], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[1], 'gpr_2':[0],
+                          'alu_flag':[0]},
+                     ]
+        
+        
+        
         if intermediate:
             if num < 10:
                 return {'state':[1, 2, 0], 'ptr':[1], 'comp_flag':[0],
