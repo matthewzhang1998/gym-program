@@ -41,6 +41,7 @@ class AbstractProgramEnv(gym.Env):
         self.seed()
         self.status = 0
         self.max_iteration = 100
+        self.intermediate = 0
         
         self.ob = None
         self.observation_space = None
@@ -284,6 +285,9 @@ class AbstractProgramEnv(gym.Env):
     def set_length(self, max_len):
         self.max_iteration = max_len
     
+    def set_intermediate(self, intermediate):
+        self.intermediate = intermediate
+    
     def render(self, mode='human', close=False):
         raise NotImplementedError("Env must implement abstract method")
     
@@ -298,7 +302,7 @@ class AbstractProgramEnv(gym.Env):
             print("Init State: {} \n Next State: {} \n Act: {} \n Rew: {}".format(sobs, nobs, act, reward))
     
     def get_goal_state(self, obs):
-        return self._enc(self.intermediate_goal(self._episode_length))[0]
+        return self._enc(self.intermediate_goal(self._episode_length), self.intermediate)[0]
     
 class SwapEnv(AbstractProgramEnv):
     env_dir = "SwapEnv"
@@ -410,7 +414,7 @@ class SwapEnv(AbstractProgramEnv):
     def _get_init(self):
         return copy.deepcopy(SwapEnv.init_state), copy.deepcopy(list(SwapEnv.sequence))
     
-    def intermediate_goal(self, num):
+    def intermediate_goal(self, num, *args):
         return {'state':[0, 1], 'ptr':[1], 'comp_flag':[1],
                       'stack':[], 'ptr_stack':[], 'gpr_1':[0], 'gpr_2':[1],
                       'alu_flag':[0]}
@@ -423,6 +427,7 @@ class SortEnv(AbstractProgramEnv):
     init_state = {'state':[3,2,1], 'ptr':[0], 'comp_flag':[0],
                       'stack':[], 'ptr_stack':[], 'gpr_1':[0], 'gpr_2':[0],
                       'alu_flag':[0]}
+    final_state = sorted(init_state['state'])
     sequence = ['bubble'] * 4
     end_scaling = 1
     
@@ -553,19 +558,25 @@ class SortEnv(AbstractProgramEnv):
 #                unshuffled = True
         return copy.deepcopy(SortEnv.init_state), copy.deepcopy(list(reversed(SortEnv.sequence)))
     
-    def intermediate_goal(self, num):
-        if num < 10:
-            return {'state':[1, 2, 0], 'ptr':[1], 'comp_flag':[0],
-                      'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[1],
-                      'alu_flag':[0]}
-        elif 10 <= num < 20:
-            return {'state':[1, 0, 2], 'ptr':[2], 'comp_flag':[0],
-                      'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[0],
-                      'alu_flag':[0]}
-        elif 20 <= num:
+    def intermediate_goal(self, num, intermediate=0):
+        if intermediate:
+            if num < 10:
+                return {'state':[1, 2, 0], 'ptr':[1], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[1],
+                          'alu_flag':[0]}
+            elif 10 <= num < 20:
+                return {'state':[1, 0, 2], 'ptr':[2], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[0],
+                          'alu_flag':[0]}
+            elif 20 <= num:
+                return {'state':[0, 1, 2], 'ptr':[0], 'comp_flag':[1],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[1], 'gpr_2':[0],
+                          'alu_flag':[0]}
+                
+        else:
             return {'state':[0, 1, 2], 'ptr':[0], 'comp_flag':[1],
-                      'stack':[], 'ptr_stack':[], 'gpr_1':[1], 'gpr_2':[0],
-                      'alu_flag':[0]}
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[1], 'gpr_2':[0],
+                          'alu_flag':[0]}
     
 class InsertEnv(AbstractProgramEnv):
     env_dir = "InsertEnv"
