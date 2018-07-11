@@ -302,7 +302,7 @@ class AbstractProgramEnv(gym.Env):
             print("Init State: {} \n Next State: {} \n Act: {} \n Rew: {}".format(sobs, nobs, act, reward))
     
     def get_goal_state(self, obs):
-        return self._enc(self.intermediate_goal(self._episode_length), self.intermediate)[0]
+        return self._enc(self.intermediate_goal(self._episode_length, self.intermediate))[0]
     
 class SwapEnv(AbstractProgramEnv):
     env_dir = "SwapEnv"
