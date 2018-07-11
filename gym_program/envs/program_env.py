@@ -609,10 +609,8 @@ class SortEnv(AbstractProgramEnv):
                           'alu_flag':[0]},
                     {'state':[0,1,2], 'ptr':[1], 'comp_flag':[0],
                           'stack':[], 'ptr_stack':[], 'gpr_1':[1], 'gpr_2':[0],
-                          'alu_flag':[0]},
+                          'alu_flag':[0]}
                      ]
-        
-        
         
         if intermediate:
             if num < 10:
