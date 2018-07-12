@@ -285,8 +285,9 @@ class AbstractProgramEnv(gym.Env):
     def set_length(self, max_len):
         self.max_iteration = max_len
     
-    def set_intermediate(self, intermediate):
+    def set_intermediate(self, intermediate, nhist=1):
         self.intermediate = intermediate
+        self.nhist = nhist
     
     def render(self, mode='human', close=False):
         raise NotImplementedError("Env must implement abstract method")
@@ -302,7 +303,7 @@ class AbstractProgramEnv(gym.Env):
             print("Init State: {} \n Next State: {} \n Act: {} \n Rew: {}".format(sobs, nobs, act, reward))
     
     def get_goal_state(self, obs):
-        return self._enc(self.intermediate_goal(self._episode_length, self.intermediate))[0]
+        return self._enc(self.intermediate_goal(self._episode_length, self.intermediate, self.nhist))[0]
     
 class SwapEnv(AbstractProgramEnv):
     env_dir = "SwapEnv"
@@ -543,7 +544,10 @@ class SortEnv(AbstractProgramEnv):
         
         if self._episode_length % self.max_iteration == 0:
             done = 1
-            reward = (smeasure(new_list, SortEnv.final_state))
+            if new_list == SortEnv.final_state:
+                reward = 1
+            else:
+                reward = 0
                  
         return reward, done
 
@@ -558,7 +562,7 @@ class SortEnv(AbstractProgramEnv):
 #                unshuffled = True
         return copy.deepcopy(SortEnv.init_state), copy.deepcopy(list(reversed(SortEnv.sequence)))
     
-    def intermediate_goal(self, num, intermediate=0):
+    def intermediate_goal(self, num, intermediate=0, nhist=1):
         sequence = [{'state':[2,1,0], 'ptr':[0], 'comp_flag':[0],
                           'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[0],
                           'alu_flag':[0]},
@@ -607,25 +611,18 @@ class SortEnv(AbstractProgramEnv):
                     {'state':[0,1,2], 'ptr':[1], 'comp_flag':[0],
                           'stack':[], 'ptr_stack':[], 'gpr_1':[1], 'gpr_2':[0],
                           'alu_flag':[0]},
-                    {'state':[0,1,2], 'ptr':[1], 'comp_flag':[0],
+                    {'state':[0,1,2], 'ptr':[1], 'comp_flag':[1],
                           'stack':[], 'ptr_stack':[], 'gpr_1':[1], 'gpr_2':[0],
-                          'alu_flag':[0]}
-                     ]
+                          'alu_flag':[0]}]
         
-        if intermediate:
-            if num < 10:
-                return {'state':[1, 2, 0], 'ptr':[1], 'comp_flag':[0],
-                          'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[1],
-                          'alu_flag':[0]}
-            elif 10 <= num < 20:
-                return {'state':[1, 0, 2], 'ptr':[2], 'comp_flag':[0],
-                          'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[0],
-                          'alu_flag':[0]}
-            elif 20 <= num:
-                return {'state':[0, 1, 2], 'ptr':[0], 'comp_flag':[1],
-                          'stack':[], 'ptr_stack':[], 'gpr_1':[1], 'gpr_2':[0],
-                          'alu_flag':[0]}
-                
+        if intermediate == 1:
+            if num < nhist:
+                return sequence[0]
+            elif num - nhist >= len(sequence):
+                return sequence[-1]
+            else:
+                return sequence[num - nhist]
+            
         else:
             return {'state':[0, 1, 2], 'ptr':[0], 'comp_flag':[1],
                           'stack':[], 'ptr_stack':[], 'gpr_1':[1], 'gpr_2':[0],
