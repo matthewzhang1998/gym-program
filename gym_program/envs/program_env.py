@@ -118,7 +118,7 @@ class AbstractProgramEnv(gym.Env):
         state_gpr_2 = state_dict["gpr_2"]
         state_comp = state_dict["comp_flag"]
         state_flag = state_dict["alu_flag"]
-    
+        
         def one_hot_deep(vector, one_hot_size, depth):
             one_hot = np.zeros((len(vector), one_hot_size))
             one_hot[np.arange(len(vector)), vector] = 1
@@ -564,6 +564,9 @@ class SortEnv(AbstractProgramEnv):
     
     def intermediate_goal(self, num, intermediate=0, nhist=1):
         sequence = [{'state':[2,1,0], 'ptr':[0], 'comp_flag':[0],
+                          'stack':[], 'ptr_stack':[], 'gpr_1':[0], 'gpr_2':[0],
+                          'alu_flag':[0]},
+                    {'state':[2,1,0], 'ptr':[0], 'comp_flag':[0],
                           'stack':[], 'ptr_stack':[], 'gpr_1':[2], 'gpr_2':[0],
                           'alu_flag':[0]},
                     {'state':[2,1,0], 'ptr':[1], 'comp_flag':[0],
@@ -616,12 +619,10 @@ class SortEnv(AbstractProgramEnv):
                           'alu_flag':[0]}]
         
         if intermediate == 1:
-            if num < nhist:
-                return sequence[0]
-            elif num - nhist >= len(sequence):
+            if num + nhist >= len(sequence):
                 return sequence[-1]
             else:
-                return sequence[num - nhist]
+                return sequence[num + nhist]
             
         else:
             return {'state':[0, 1, 2], 'ptr':[0], 'comp_flag':[1],
