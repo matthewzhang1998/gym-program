@@ -173,6 +173,10 @@ class SortEnv(AbstractProgramEnv):
     
     def intermediate_goal(self, state_dict):
         s = copy.deepcopy(state_dict)
+        
+        gpr_1 = state_dict['gpr_1'][0]
+        gpr_2 = state_dict['gpr_2'][0]
+        
         for i in range(len(state_dict['state']) - 1):
             if state_dict['state'][i] > state_dict['state'][i+1]:
                 # if first is greater than second
@@ -202,8 +206,8 @@ class SortEnv(AbstractProgramEnv):
                         
             elif state_dict['state'][i] == state_dict['state'][i+1]:
                 # assume first has been swapped with second
-                if state_dict['gpr_2'][0] < state_dict['state'][i] or \
-                    state_dict['gpr_1'][0] < state_dict['state'][i]:
+                if ((state_dict['gpr_2'][0] < state_dict['state'][i]) and (state_dict['gpr_2'][0] not in state_dict['state'])) or \
+                    ((state_dict['gpr_1'][0] < state_dict['state'][i]) and (state_dict['gpr_1'][0] not in state_dict['state'])):
                     if state_dict['ptr'][0] > i:
                         s['ptr'][0] -= 1
                         return s
@@ -216,8 +220,8 @@ class SortEnv(AbstractProgramEnv):
                     else:
                         s['state'][i] = state_dict['gpr_1'][0]
                         return s
-                elif state_dict['gpr_2'][0] > state_dict['state'][i+1] or \
-                    state_dict['gpr_1'][0] > state_dict['state'][i+1]:
+                elif ((state_dict['gpr_2'][0] > state_dict['state'][i+1]) and (state_dict['gpr_2'][0] not in state_dict['state'])) or \
+                    ((state_dict['gpr_1'][0] > state_dict['state'][i+1]) and (state_dict['gpr_1'][0] not in state_dict['state'])):
                     if state_dict['ptr'][0] > i+1:
                         s['ptr'][0] -= 1
                         return s
