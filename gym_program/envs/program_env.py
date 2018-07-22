@@ -21,7 +21,7 @@ class AbstractProgramEnv(gym.Env):
     main_dir = osp.dirname('/home/matthewszhang/logs/program')
 
     n_features = 32
-    n_actions = 10
+    n_actions = 6
     one_hot = 6
     depth = 6
     penalty = 1e-5
@@ -43,6 +43,7 @@ class AbstractProgramEnv(gym.Env):
         self.status = 0
         self.max_iteration = 100
         self.intermediate = 0
+        self.final_state = self.init_state
         
         self.ob = None
         self.observation_space = None
@@ -117,8 +118,6 @@ class AbstractProgramEnv(gym.Env):
         state_ptr = state_dict["ptr"]
         state_gpr_1 = state_dict["gpr_1"]
         state_gpr_2 = state_dict["gpr_2"]
-        state_comp = state_dict["comp_flag"]
-        state_flag = state_dict["alu_flag"]
         
         def one_hot_deep(vector, one_hot_size, depth):
             one_hot = np.zeros((len(vector), one_hot_size))
@@ -151,16 +150,8 @@ class AbstractProgramEnv(gym.Env):
                                      AbstractProgramEnv.depth)
         flatten_ptr[:,3] = 1
         
-        flatten_comp = one_hot_deep(state_comp, AbstractProgramEnv.one_hot,
-                                     AbstractProgramEnv.depth)
-        flatten_comp[:,4] = 1
-        
-        flatten_flag = one_hot_deep(state_flag, AbstractProgramEnv.one_hot,
-                                     AbstractProgramEnv.depth)
-        flatten_flag[:,5] = 1
-        
         enc = np.concatenate((flatten_state, flatten_ptr, flatten_gpr_1,
-                              flatten_gpr_2, flatten_comp))
+                              flatten_gpr_2))
         
         
         if self.model == 'mlp':
@@ -208,22 +199,22 @@ class AbstractProgramEnv(gym.Env):
         # register write
         elif action == 5:
             new_dict["state"][new_dict["ptr"][0]] = new_dict["gpr_2"][0]
-            
-        elif action == 6:
-            if new_dict["state"][ptr] <= new_dict["gpr_1"][0]:
-                new_dict["alu_flag"][0] = 1
-            else: new_dict["alu_flag"][0] = 2   
-        
-        elif action == 7: # push
-            new_dict["stack"].append(new_dict["gpr_1"][0])
-            
-        elif action == 8: # pop
-            if new_dict["stack"]:
-                new_dict["gpr_1"][0] = new_dict["stack"].pop()
-                
-        elif action == AbstractProgramEnv.n_actions - 1:
-            new_dict["return"] = new_dict["gpr_1"][0]
-            new_dict["comp_flag"][0] = 1
+#            
+#        elif action == 6:
+#            if new_dict["state"][ptr] <= new_dict["gpr_1"][0]:
+#                new_dict["alu_flag"][0] = 1
+#            else: new_dict["alu_flag"][0] = 2   
+#        
+#        elif action == 7: # push
+#            new_dict["stack"].append(new_dict["gpr_1"][0])
+#            
+#        elif action == 8: # pop
+#            if new_dict["stack"]:
+#                new_dict["gpr_1"][0] = new_dict["stack"].pop()
+#                
+#        elif action == AbstractProgramEnv.n_actions - 1:
+#            new_dict["return"] = new_dict["gpr_1"][0]
+#            new_dict["comp_flag"][0] = 1
         
         return new_dict
             
@@ -271,7 +262,7 @@ class AbstractProgramEnv(gym.Env):
             self.t_out = self._lstm_normalize(self.t_in)
         
         self._cur_model = curiosity(n_features, n_actions, dir=self.logdir)
-        self.ob = Box(low = -1, high = 1, shape = (n_features,))
+        self.ob = Box(low = -1, high = 1, shape = (n_features,), dtype=np.float32)
         
     def set_visualize(self, visualize):
         self.visualize = visualize
@@ -289,6 +280,11 @@ class AbstractProgramEnv(gym.Env):
     def set_intermediate(self, intermediate, nhist=1):
         self.intermediate = intermediate
         self.nhist = nhist
+        
+        intermediate = self._init_state
+        for _ in range(self.nhist):
+            intermediate = self.intermediate_goal(intermediate)
+        self.final_state = intermediate
         
     def set_test(self, test=0):
         self.test = test

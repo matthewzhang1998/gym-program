@@ -25,10 +25,9 @@ class SortEnv(AbstractProgramEnv):
     dim1 = 5
     dim2 = 6
     vis_iteration = 1e4
-    init_state = {'state':[2,1,0], 'ptr':[0], 'comp_flag':[0],
+    init_state = {'state':[2,1,0], 'ptr':[0],
                       'stack':[], 'ptr_stack':[], 'gpr_1':[0], 'gpr_2':[0],
                       'alu_flag':[0]}
-    final_state = sorted(init_state['state'])
     sequence = ['bubble'] * 4
     end_scaling = 1
     
@@ -144,7 +143,7 @@ class SortEnv(AbstractProgramEnv):
         
         if self._episode_length % self.max_iteration == 0:
             done = 1
-            if new_list == SortEnv.final_state:
+            if new_list == self.final_state['state']:
                 reward = 1
             else:
                 reward = 0
@@ -165,7 +164,7 @@ class SortEnv(AbstractProgramEnv):
         while(unshuffled):
             random.shuffle(state["state"])
             unshuffled = False
-            if state["state"] == SortEnv.final_state:
+            if state["state"] == self.final_state['state']:
                 unshuffled = True
             if not self.test and state["state"] in TEST_STATE:
                 unshuffled = True
@@ -173,9 +172,6 @@ class SortEnv(AbstractProgramEnv):
     
     def intermediate_goal(self, state_dict):
         s = copy.deepcopy(state_dict)
-        
-        gpr_1 = state_dict['gpr_1'][0]
-        gpr_2 = state_dict['gpr_2'][0]
         
         for i in range(len(state_dict['state']) - 1):
             if state_dict['state'][i] > state_dict['state'][i+1]:
@@ -235,7 +231,6 @@ class SortEnv(AbstractProgramEnv):
                         s['state'][i+1] = state_dict['gpr_1'][0]
                         return s
         
-        s['comp_flag'][0] = 1
         return s        
         
 #        if state_dict['state'][0] == state_dict['state'][1]
