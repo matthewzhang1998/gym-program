@@ -82,6 +82,11 @@ class AbstractProgramEnv(gym.Env):
         self._episode_length = 0
         self._state, self._tokens = self._get_init()
         self.obs, _ = self._enc(self._state)
+        intermediate = self._state
+        for _ in range(self.max_iteration):
+            intermediate = self.intermediate_goal(intermediate)
+        self.final_state = intermediate
+        print(self._state, self.final_state)
         return self.obs
     
     def _get_reward(self, state, new_state, action):
@@ -282,7 +287,7 @@ class AbstractProgramEnv(gym.Env):
         self.nhist = nhist
         
         intermediate = self._init_state
-        for _ in range(self.nhist):
+        for _ in range(self.max_iteration):
             intermediate = self.intermediate_goal(intermediate)
         self.final_state = intermediate
         
