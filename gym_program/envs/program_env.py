@@ -86,7 +86,6 @@ class AbstractProgramEnv(gym.Env):
         for _ in range(self.max_iteration):
             intermediate = self.intermediate_goal(intermediate)
         self.final_state = intermediate
-        print(self._state, self.final_state)
         return self.obs
     
     def _get_reward(self, state, new_state, action):
