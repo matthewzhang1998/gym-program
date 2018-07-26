@@ -152,26 +152,35 @@ class SortEnv(AbstractProgramEnv):
 
     def _get_init(self):
         ''' Turn off shuffling '''
-        TEST_STATE = [[2,0,1]]
-        state = copy.deepcopy(SortEnv.init_state)
-        
-        if self.test:
-            i = np.random.randint(0, len(TEST_STATE))
-            state['state'] = TEST_STATE[i]
-            return state, copy.deepcopy(list(reversed(SortEnv.sequence)))
-        
-        unshuffled = True
-        while(unshuffled):
-            random.shuffle(state["state"])
-            unshuffled = False
-            if state["state"] == self.final_state['state']:
-                unshuffled = True
-            if not self.test and state["state"] in TEST_STATE:
-                unshuffled = True
+#        TEST_STATE = [[2,0,1]]
+#        state = copy.deepcopy(SortEnv.init_state)
+#        
+#        if self.test:
+#            i = np.random.randint(0, len(TEST_STATE))
+#            state['state'] = TEST_STATE[i]
+#            return state, copy.deepcopy(list(reversed(SortEnv.sequence)))
+#        TEST_STATE = []
+#        
+#        unshuffled = True
+#        state = copy.deepcopy(self.init_state)
+#        while(unshuffled):
+#            random.shuffle(state["state"])
+#            unshuffled = False
+#            if state["state"] == [0,1,2]:
+#                unshuffled = True
+#            if state["state"] in TEST_STATE:
+#                unshuffled = True
+        state = copy.deepcopy(self.init_state)
+        state['state'] = [2,1,0]
         return state, copy.deepcopy(list(reversed(SortEnv.sequence)))
     
     def intermediate_goal(self, state_dict):
         s = copy.deepcopy(state_dict)
+        
+        for i in range(len(s['state'])):
+            if (i not in s['state']) and (i not in s['gpr_1']) and \
+                (i not in s['gpr_2']):
+                return s, 0
         
         for i in range(len(state_dict['state']) - 1):
             if state_dict['state'][i] > state_dict['state'][i+1]:
@@ -179,59 +188,63 @@ class SortEnv(AbstractProgramEnv):
                 if state_dict['gpr_1'][0] != state_dict['state'][i]:
                     if state_dict['ptr'][0] > i:
                         s['ptr'][0] -= 1
-                        return s
+                        return s, 0
                     elif state_dict['ptr'][0] < i:
                         s['ptr'][0] += 1
-                        return s
+                        return s, 1
                     else:
                         s['gpr_1'][0] = state_dict['state'][i]
-                        return s
+                        return s, 2
                 else:
                     if state_dict['ptr'][0] > i+1:
                         s['ptr'][0] -= 1
-                        return s
+                        return s, 0
                     elif state_dict['ptr'][0] < i+1:
                         s['ptr'][0] += 1
-                        return s
+                        return s, 1
                     elif state_dict['gpr_2'][0] != state_dict['state'][i+1]:
                         s['gpr_2'][0] = state_dict['state'][i+1]
-                        return s
+                        return s, 4
                     else:
                         s['state'][i+1] = state_dict['gpr_1'][0]
-                        return s
+                        return s, 3
                         
             elif state_dict['state'][i] == state_dict['state'][i+1]:
                 # assume first has been swapped with second
-                if ((state_dict['gpr_2'][0] < state_dict['state'][i]) and (state_dict['gpr_2'][0] not in state_dict['state'])) or \
-                    ((state_dict['gpr_1'][0] < state_dict['state'][i]) and (state_dict['gpr_1'][0] not in state_dict['state'])):
+                if ((state_dict['gpr_2'][0] < state_dict['state'][i]) \
+                    and (state_dict['gpr_2'][0] not in state_dict['state'])) or \
+                    ((state_dict['gpr_1'][0] < state_dict['state'][i]) \
+                     and (state_dict['gpr_1'][0] not in state_dict['state'])):
                     if state_dict['ptr'][0] > i:
                         s['ptr'][0] -= 1
-                        return s
+                        return s, 0
                     elif state_dict['ptr'][0] < i:
                         s['ptr'][0] += 1
-                        return s
+                        return s, 1
                     elif state_dict['gpr_2'][0] < state_dict['state'][i]:
                         s['state'][i] = state_dict['gpr_2'][0]
-                        return s
+                        return s, 5
                     else:
                         s['state'][i] = state_dict['gpr_1'][0]
-                        return s
-                elif ((state_dict['gpr_2'][0] > state_dict['state'][i+1]) and (state_dict['gpr_2'][0] not in state_dict['state'])) or \
-                    ((state_dict['gpr_1'][0] > state_dict['state'][i+1]) and (state_dict['gpr_1'][0] not in state_dict['state'])):
+                        return s, 3
+                elif ((state_dict['gpr_2'][0] > state_dict['state'][i+1]) \
+                      and (state_dict['gpr_2'][0] not in state_dict['state'])) or \
+                    ((state_dict['gpr_1'][0] > state_dict['state'][i+1]) \
+                     and (state_dict['gpr_1'][0] not in state_dict['state'])):
                     if state_dict['ptr'][0] > i+1:
                         s['ptr'][0] -= 1
-                        return s
+                        return s, 0
                     elif state_dict['ptr'][0] < i+1:
                         s['ptr'][0] += 1
-                        return s
+                        return s, 1
                     elif state_dict['gpr_2'][0] > state_dict['state'][i+1]:
                         s['state'][i+1] = state_dict['gpr_2'][0]
-                        return s
+                        return s, 5
                     else:
                         s['state'][i+1] = state_dict['gpr_1'][0]
-                        return s
+                        return s, 3
         
-        return s        
+        return s, 0        
         
 #        if state_dict['state'][0] == state_dict['state'][1]
 #            

@@ -84,7 +84,7 @@ class AbstractProgramEnv(gym.Env):
         self.obs, _ = self._enc(self._state)
         intermediate = self._state
         for _ in range(self.max_iteration):
-            intermediate = self.intermediate_goal(intermediate)
+            intermediate, _ = self.intermediate_goal(intermediate)
         self.final_state = intermediate
         return self.obs
     
@@ -287,7 +287,7 @@ class AbstractProgramEnv(gym.Env):
         
         intermediate = self._init_state
         for _ in range(self.max_iteration):
-            intermediate = self.intermediate_goal(intermediate)
+            intermediate, _ = self.intermediate_goal(intermediate)
         self.final_state = intermediate
         
     def set_test(self, test=0):
@@ -310,10 +310,11 @@ class AbstractProgramEnv(gym.Env):
         if obs is None:
             obs = self._enc(self._state)[0]
         intermediate = self.decode(obs)
+        actions = []
         for _ in range(self.nhist):
-            intermediate = self.intermediate_goal(intermediate)
-        
-        return self._enc(intermediate)[0]
+            intermediate, action = self.intermediate_goal(intermediate)
+            actions.append(action)
+        return (self._enc(intermediate)[0], actions[0])
     
     def get_action(self, obs):
         raise NotImplementedError
